@@ -1,0 +1,13 @@
+@prefix lv2:    <http://lv2plug.in/ns/lv2core#> .
+@prefix modgui: <http://moddevices.com/ns/modgui#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+
+<urn:ashafq:@LV2NAME@#mono>
+    a lv2:Plugin ;
+    lv2:binary <@LV2NAME@@LIB_EXT@>  ;
+    rdfs:seeAlso <@LV2NAME@.ttl> .
+
+<urn:ashafq:@LV2NAME@#stereo>
+    a lv2:Plugin ;
+    lv2:binary <@LV2NAME@@LIB_EXT@>  ;
+    rdfs:seeAlso <@LV2NAME@.ttl> .

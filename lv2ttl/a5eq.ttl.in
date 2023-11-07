@@ -1,0 +1,440 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix unit:  <http://lv2plug.in/ns/extensions/units#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+<https://shafq.at/pages/about.html#about>
+    a foaf:Person;
+    foaf:name "Ayan Shafqat";
+    foaf:mbox <mailto:ayan@shafq.at>;
+    foaf:homepage <https://shafq.at/> .
+
+unit:hz0
+    a unit:Unit ;
+    rdfs:label "hertz" ;
+    unit:prefixConversion [
+        unit:factor 0.001 ;
+        unit:to unit:khz
+    ] ;
+    unit:render "%.0f Hz" ;
+    unit:symbol "Hz" .
+
+unit:db1
+    a unit:Unit ;
+    rdfs:label "decibels" ;
+    rdfs:label "dB" ;
+    unit:render "%.1f dB" ;
+    unit:symbol "dB" .
+
+unit:audioQ
+    a unit:Unit;
+    rdfs:label "Q" ;
+    rdfs:label "Q" ;
+    unit:render "%.1f Q" ;
+    unit:symbol "Q" .
+
+<urn:ashafq:@LV2NAME@#mono>
+    a lv2:Plugin, doap:Project, lv2:FilterPlugin;
+    doap:license <http://usefulinc.com/doap/licenses/gpl>;
+    doap:maintainer <https://shafq.at/pages/about.html#about>;
+    doap:name "A5EQ, 5-Band Parametric EQ (Mono)"^^rdf:PlainLiteral;
+    @VERSION@
+
+    lv2:optionalFeature lv2:hardRTCapable;
+    lv2:requiredFeature <http://lv2plug.in/ns/ext/options#options>;
+
+    lv2:port
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 0 ;
+        lv2:name "Frequency (Low)" ;
+        lv2:symbol "freql" ;
+        lv2:default 160.000000 ;
+        lv2:minimum 20.000000 ;
+        lv2:maximum 20000.000000 ;
+        unit:unit unit:hz0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 1 ;
+        lv2:name "Frequency (1)" ;
+        lv2:symbol "freq1" ;
+        lv2:default 300.000000 ;
+        lv2:minimum 20.000000 ;
+        lv2:maximum 20000.000000 ;
+        unit:unit unit:hz0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 2 ;
+        lv2:name "Frequency (2)" ;
+        lv2:symbol "freq2" ;
+        lv2:default 1000.000000 ;
+        lv2:minimum 20.000000 ;
+        lv2:maximum 20000.000000 ;
+        unit:unit unit:hz0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 3 ;
+        lv2:name "Frequency (3)" ;
+        lv2:symbol "freq3" ;
+        lv2:default 2500.000000 ;
+        lv2:minimum 20.000000 ;
+        lv2:maximum 20000.000000 ;
+        unit:unit unit:hz0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 4 ;
+        lv2:name "Frequency (High)" ;
+        lv2:symbol "freqh" ;
+        lv2:default 9000.000000 ;
+        lv2:minimum 20.000000 ;
+        lv2:maximum 20000.000000 ;
+        unit:unit unit:hz0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 5 ;
+        lv2:name "Gain (Low Shelf)" ;
+        lv2:symbol "gl" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -20.000000 ;
+        lv2:maximum 20.000000 ;
+        unit:unit unit:db1 ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 6 ;
+        lv2:name "Gain (1)" ;
+        lv2:symbol "g1" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -20.000000 ;
+        lv2:maximum 20.000000 ;
+        unit:unit unit:db1 ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 7 ;
+        lv2:name "Gain (2)" ;
+        lv2:symbol "g2" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -20.000000 ;
+        lv2:maximum 20.000000 ;
+        unit:unit unit:db1 ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 8 ;
+        lv2:name "Gain (3)" ;
+        lv2:symbol "g3" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -20.000000 ;
+        lv2:maximum 20.000000 ;
+        unit:unit unit:db1 ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 9 ;
+        lv2:name "Gain (High Shelf)" ;
+        lv2:symbol "gh" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -20.000000 ;
+        lv2:maximum 20.000000 ;
+        unit:unit unit:db1 ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 10 ;
+        lv2:name "Q (Low Shelf)" ;
+        lv2:symbol "ql" ;
+        lv2:default 0.300000 ;
+        lv2:minimum 0.1000000 ;
+        lv2:maximum 4.000000 ;
+        unit:unit unit:audioQ ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 11 ;
+        lv2:name "Q (1)" ;
+        lv2:symbol "q1" ;
+        lv2:default 0.300000 ;
+        lv2:minimum 0.1000000 ;
+        lv2:maximum 4.000000 ;
+        unit:unit unit:audioQ ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 12 ;
+        lv2:name "Q (2)" ;
+        lv2:symbol "q2" ;
+        lv2:default 0.300000 ;
+        lv2:minimum 0.1000000 ;
+        lv2:maximum 4.000000 ;
+        unit:unit unit:audioQ ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 13 ;
+        lv2:name "Q (3)" ;
+        lv2:symbol "q3" ;
+        lv2:default 0.300000 ;
+        lv2:minimum 0.1000000 ;
+        lv2:maximum 4.000000 ;
+        unit:unit unit:audioQ ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 14 ;
+        lv2:name "Q (Hi Shelf)" ;
+        lv2:symbol "qh" ;
+        lv2:default 0.300000 ;
+        lv2:minimum 0.1000000 ;
+        lv2:maximum 4.000000 ;
+        unit:unit unit:audioQ ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 15 ;
+        lv2:name "Enable" ;
+        lv2:symbol "enable" ;
+        lv2:default 1 ;
+        lv2:minimum 0 ;
+        lv2:maximum 1 ;
+        lv2:portProperty lv2:integer, lv2:toggled ;
+        lv2:designation lv2:enabled;
+    ],
+    [
+        a lv2:AudioPort, lv2:InputPort ;
+        lv2:index 16 ;
+        lv2:symbol "in_left" ;
+        lv2:name "Audio Input (mono)";
+    ],
+    [
+        a lv2:AudioPort, lv2:OutputPort ;
+        lv2:index 17 ;
+        lv2:symbol "out_left" ;
+        lv2:name "Audio Output (mono)";
+    ].
+
+<urn:ashafq:@LV2NAME@#stereo>
+    a lv2:Plugin, doap:Project, lv2:FilterPlugin;
+    doap:license <http://usefulinc.com/doap/licenses/gpl>;
+    doap:maintainer <https://shafq.at/pages/about.html#about>;
+    doap:name "A5EQ, 5-Band Parametric EQ (Stereo)"^^rdf:PlainLiteral;
+    @VERSION@
+
+    lv2:optionalFeature lv2:hardRTCapable;
+    lv2:requiredFeature <http://lv2plug.in/ns/ext/options#options>;
+
+    lv2:port
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 0 ;
+        lv2:name "Frequency (Low)" ;
+        lv2:symbol "freql" ;
+        lv2:default 160.000000 ;
+        lv2:minimum 20.000000 ;
+        lv2:maximum 20000.000000 ;
+        unit:unit unit:hz0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 1 ;
+        lv2:name "Frequency (1)" ;
+        lv2:symbol "freq1" ;
+        lv2:default 300.000000 ;
+        lv2:minimum 20.000000 ;
+        lv2:maximum 20000.000000 ;
+        unit:unit unit:hz0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 2 ;
+        lv2:name "Frequency (2)" ;
+        lv2:symbol "freq2" ;
+        lv2:default 1000.000000 ;
+        lv2:minimum 20.000000 ;
+        lv2:maximum 20000.000000 ;
+        unit:unit unit:hz0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 3 ;
+        lv2:name "Frequency (3)" ;
+        lv2:symbol "freq3" ;
+        lv2:default 2500.000000 ;
+        lv2:minimum 20.000000 ;
+        lv2:maximum 20000.000000 ;
+        unit:unit unit:hz0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 4 ;
+        lv2:name "Frequency (High)" ;
+        lv2:symbol "freqh" ;
+        lv2:default 9000.000000 ;
+        lv2:minimum 20.000000 ;
+        lv2:maximum 20000.000000 ;
+        unit:unit unit:hz0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 5 ;
+        lv2:name "Gain (Low Shelf)" ;
+        lv2:symbol "gl" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -20.000000 ;
+        lv2:maximum 20.000000 ;
+        unit:unit unit:db1 ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 6 ;
+        lv2:name "Gain (1)" ;
+        lv2:symbol "g1" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -20.000000 ;
+        lv2:maximum 20.000000 ;
+        unit:unit unit:db1 ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 7 ;
+        lv2:name "Gain (2)" ;
+        lv2:symbol "g2" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -20.000000 ;
+        lv2:maximum 20.000000 ;
+        unit:unit unit:db1 ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 8 ;
+        lv2:name "Gain (3)" ;
+        lv2:symbol "g3" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -20.000000 ;
+        lv2:maximum 20.000000 ;
+        unit:unit unit:db1 ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 9 ;
+        lv2:name "Gain (High Shelf)" ;
+        lv2:symbol "gh" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -20.000000 ;
+        lv2:maximum 20.000000 ;
+        unit:unit unit:db1 ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 10 ;
+        lv2:name "Q (Low Shelf)" ;
+        lv2:symbol "ql" ;
+        lv2:default 0.300000 ;
+        lv2:minimum 0.1000000 ;
+        lv2:maximum 4.000000 ;
+        unit:unit unit:audioQ ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 11 ;
+        lv2:name "Q (1)" ;
+        lv2:symbol "q1" ;
+        lv2:default 0.300000 ;
+        lv2:minimum 0.1000000 ;
+        lv2:maximum 4.000000 ;
+        unit:unit unit:audioQ ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 12 ;
+        lv2:name "Q (2)" ;
+        lv2:symbol "q2" ;
+        lv2:default 0.300000 ;
+        lv2:minimum 0.1000000 ;
+        lv2:maximum 4.000000 ;
+        unit:unit unit:audioQ ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 13 ;
+        lv2:name "Q (3)" ;
+        lv2:symbol "q3" ;
+        lv2:default 0.300000 ;
+        lv2:minimum 0.1000000 ;
+        lv2:maximum 4.000000 ;
+        unit:unit unit:audioQ ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 14 ;
+        lv2:name "Q (Hi Shelf)" ;
+        lv2:symbol "qh" ;
+        lv2:default 0.300000 ;
+        lv2:minimum 0.1000000 ;
+        lv2:maximum 4.000000 ;
+        unit:unit unit:audioQ ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic> ;
+    ],
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 15 ;
+        lv2:name "Enable" ;
+        lv2:symbol "enable" ;
+        lv2:default 1 ;
+        lv2:minimum 0 ;
+        lv2:maximum 1 ;
+        lv2:portProperty lv2:integer, lv2:toggled ;
+        lv2:designation lv2:enabled;
+    ],
+    [
+        a lv2:AudioPort, lv2:InputPort ;
+        lv2:index 16 ;
+        lv2:symbol "in_left" ;
+        lv2:name "Audio Input Left (mono)";
+    ],
+    [
+        a lv2:AudioPort, lv2:OutputPort ;
+        lv2:index 17 ;
+        lv2:symbol "out_left" ;
+        lv2:name "Audio Output Left (mono)";
+    ],
+    [
+        a lv2:AudioPort, lv2:InputPort ;
+        lv2:index 18 ;
+        lv2:symbol "in_right" ;
+        lv2:name "Audio Input Right";
+    ],
+    [
+        a lv2:AudioPort, lv2:OutputPort ;
+        lv2:index 19 ;
+        lv2:symbol "out_right" ;
+        lv2:name "Audio Output Right";
+    ].
