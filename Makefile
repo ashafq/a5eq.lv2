@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-OPTIMIZATIONS ?= -msse -msse2 -msse3 -mfpmath=sse -ffast-math -fno-finite-math-only -O3
+OPTIMIZATIONS ?= -mfma -mfpmath=sse -ffast-math -fno-finite-math-only -O3
 PREFIX ?= /usr/local
 CFLAGS ?= $(OPTIMIZATIONS) -Wall -Wextra -Wpedantic -std=c++17
 LIBDIR ?= lib
