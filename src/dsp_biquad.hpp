@@ -156,11 +156,11 @@ static inline void process_biquad_stereo(const double *coeff, double *state,
     __m128d x0 = _mm_unpacklo_pd(x_left, x_right);
 
     // y0 = (b0 * x0) + s1
-    __m128d y0 = _mm_add_pd(_mm_mul_pd(b0, x0), s1);
+    __m128d y0 = _mm_fmadd_pd(b0, x0, s1);
     // s1 = (b1 * x0) + (a1 * y0) + s2
-    s1 = _mm_add_pd(_mm_add_pd(_mm_mul_pd(b1, x0), _mm_mul_pd(a1, y0)), s2);
+    s1 = _mm_fmadd_pd(b1, x0, _mm_fmadd_pd(a1, y0, s2));
     // s2 = (b2 * x0) + (a2 * y0)
-    s2 = _mm_add_pd(_mm_mul_pd(b2, x0), _mm_mul_pd(a2, y0));
+    s2 = _mm_fmadd_pd(b2, x0, _mm_mul_pd(a2, y0));
 
     // y0 = {yl, yr}
     __m128d yl = _mm_unpacklo_pd(y0, y0); // {yl, yl}
