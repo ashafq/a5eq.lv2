@@ -44,7 +44,7 @@ public:
   static constexpr size_t NUM_BANDS = 5;
   static constexpr size_t NUM_COEFF_PER_BAND = 5;
   static constexpr size_t NUM_STATE_PER_BAND = 4;
-  static constexpr size_t MINIMUM_FRAME_SIZE = 16;
+  static constexpr size_t MINIMUM_FRAME_SIZE = 64;
 
   static constexpr auto THRESHOLD = 1.0e-3F;
   static constexpr auto FREQ_MIN = 20.0F;
