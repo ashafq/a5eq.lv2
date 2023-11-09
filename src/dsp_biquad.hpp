@@ -18,6 +18,7 @@
 #ifndef A5EQ_DSP_BIQUAD_HPP_
 #define A5EQ_DSP_BIQUAD_HPP_
 
+#include <algorithm>
 #include <cstddef>
 
 #define ARM_NEON_OPTIMIZATION (3)
@@ -105,10 +106,10 @@
  *
  * @note Memory segments in @p src and @p dst may overlap
  */
-static inline void process_biquad_stereo(const double *coeff, double *state,
-                                         float *out_left, const float *in_left,
-                                         float *out_right,
-                                         const float *in_right, size_t frames) {
+static void process_biquad_stereo(const double *coeff, double *state,
+                                  float *out_left, const float *in_left,
+                                  float *out_right, const float *in_right,
+                                  size_t frames) {
   // Copy the same coefficients for both left and right channels
   __m128d b0 = _mm_set1_pd(coeff[0]);
   __m128d b1 = _mm_set1_pd(coeff[1]);
@@ -270,14 +271,12 @@ static void process_biquad_stereo(const double *coeff, double *state,
 /**
  * @brief Process biquad filter for a single stage of biquad and transition
  *
- * @param[in] coeff Filter coefficients
+ * @param[in] old_coeff Old filter coefficients
+ * @param[in] new_coeff New filter coefficients
  * @param[in,out] state Filter state
  * @param[out] dst Destination/output buffer
  * @param[in] src Source/input buffer
  * @param len Number of samples to process
- *
- * @note Filter is executed in Direct form II topology
- * @see https://ccrma.stanford.edu/~jos/fp/Transposed_Direct_Forms.html
  *
  * @note Memory segments in @p src and @p dst may overlap
  */
@@ -286,80 +285,44 @@ static void process_biquad_stereo_xfade(const double *old_coeff,
                                         float *out_left, const float *in_left,
                                         float *out_right, const float *in_right,
                                         size_t frames) {
-  // Load old coefficients
-  const auto b0_old = *old_coeff++;
-  const auto b1_old = *old_coeff++;
-  const auto b2_old = *old_coeff++;
-  const auto a1_old = *old_coeff++;
-  const auto a2_old = *old_coeff++;
+  // Implement the xfade utilizing the other biquad routine
+  constexpr size_t MIN_FRAMES = 64;
+  constexpr size_t STATE_SIZE = 4;
+  float out_old_left[MIN_FRAMES];
+  float out_old_right[MIN_FRAMES];
+  double temp_state[STATE_SIZE] = {0};
 
-  // Load new coefficients
-  const auto b0_new = *new_coeff++;
-  const auto b1_new = *new_coeff++;
-  const auto b2_new = *new_coeff++;
-  const auto a1_new = *new_coeff++;
-  const auto a2_new = *new_coeff++;
+  float gain = 0.0F;
+  const float delta = 1.0F / static_cast<float>(frames);
 
-  // Process left channel
-  auto s1_old = state[0];
-  auto s2_old = state[2];
+  size_t count = 0;
 
-  auto s1_new = 0.0;
-  auto s2_new = 0.0;
+  while (count < frames) {
+    // compute the block size
+    size_t block_size = std::min(MIN_FRAMES, frames - count);
 
-  auto gain = 0.0;
-  const auto delta = 1.0 / frames;
+    // Compute the offset
+    const float *xl = in_left + count;
+    const float *xr = in_right + count;
+    float *yl = out_old_left;
+    float *yr = out_old_right;
+    float *zl = out_left + count;
+    float *zr = out_right + count;
 
-  for (size_t i = 0; i < frames; ++i) {
-    auto in = static_cast<double>(in_left[i]);
+    // Process the biquad with old coefficients, discard IIR state
+    process_biquad_stereo(old_coeff, temp_state, yl, xl, yr, xr, block_size);
 
-    auto out_old = (b0_old * in) + s1_old;
-    s1_old = (b1_old * in) - (a1_old * out_old) + s2_old;
-    s2_old = (b2_old * in) - (a2_old * out_old);
+    // Process biquad with new coefficients
+    process_biquad_stereo(new_coeff, state, zl, xl, zr, xr, block_size);
 
-    auto out_new = (b0_new * in) + s1_new;
-    s1_new = (b1_new * in) - (a1_new * out_new) + s2_new;
-    s2_new = (b2_new * in) - (a2_new * out_new);
+    for (size_t i = 0; i < block_size; ++i) {
+      zl[i] = ((1.0F - gain) * yl[i]) + (gain * xl[i]);
+      zr[i] = ((1.0F - gain) * yr[i]) + (gain * xr[i]);
+      gain += delta; // = std::min(delta + gain, 1.0F);
+    }
 
-    auto out = ((1.0 - gain) * out_old) + (gain * out_new);
-
-    gain += delta;
-
-    out_left[i] = static_cast<float>(out);
+    count += block_size;
   }
-
-  state[0] = s1_new;
-  state[2] = s2_new;
-
-  // Process right channel
-  s1_old = state[1];
-  s2_old = state[3];
-
-  s1_new = 0.0;
-  s2_new = 0.0;
-
-  gain = 0.0;
-
-  for (size_t i = 0; i < frames; ++i) {
-    auto in = static_cast<double>(in_right[i]);
-
-    auto out_old = (b0_old * in) + s1_old;
-    s1_old = (b1_old * in) - (a1_old * out_old) + s2_old;
-    s2_old = (b2_old * in) - (a2_old * out_old);
-
-    auto out_new = (b0_new * in) + s1_new;
-    s1_new = (b1_new * in) - (a1_new * out_new) + s2_new;
-    s2_new = (b2_new * in) - (a2_new * out_new);
-
-    auto out = ((1.0 - gain) * out_old) + (gain * out_new);
-
-    gain += delta;
-
-    out_right[i] = static_cast<float>(out);
-  }
-
-  state[1] = s1_new;
-  state[3] = s2_new;
 }
 
 #endif // A5EQ_DSP_BIQUAD_HPP_
