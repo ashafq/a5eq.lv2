@@ -4,7 +4,7 @@ OPTIMIZATIONS ?= -mfma -mfpmath=sse -ffast-math -fno-finite-math-only -O3
 PREFIX ?= /usr/local
 CFLAGS ?= $(OPTIMIZATIONS) -Wall -Wextra -Wpedantic -std=c++17
 LIBDIR ?= lib
-CC     := gcc
+CC     := g++
 
 STRIP?=strip
 STRIPFLAGS?=-s

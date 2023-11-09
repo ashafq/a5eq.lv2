@@ -43,7 +43,7 @@ public:
   static constexpr size_t NUM_BANDS = 5;
   static constexpr size_t NUM_COEFF_PER_BAND = 5;
   static constexpr size_t NUM_STATE_PER_BAND = 4;
-  static constexpr size_t MINIMUM_FRAME_SIZE = 64;
+  static constexpr size_t MINIMUM_FRAME_SIZE = 16;
 
   static constexpr auto THRESHOLD = 1.0e-3F;
   static constexpr auto FREQ_MIN = 20.0F;
@@ -72,12 +72,18 @@ public:
   A5Eq() = default;
   ~A5Eq() = default;
 
-  void set_sample_rate(float rate) {
+  /**
+   * @brief Set the sample rate from host
+   */
+  void set_sample_rate(float rate) noexcept {
     sample_rate_ = rate;
     update_coefficients();
   }
 
-  void connect_port(uint32_t port, void *ptr) {
+  /**
+   * @brief Connect ports from host
+   */
+  void connect_port(uint32_t port, void *ptr) noexcept {
     if ((port >= FREQ_PORT_START) && (port < FREQ_PORT_END)) {
       DBG(printf("FREQ[%u] = %p\n", port - FREQ_PORT_START, ptr););
       freq_control_[port - FREQ_PORT_START] = static_cast<float *>(ptr);
@@ -148,7 +154,7 @@ public:
    *
    * @param frames Number of frames to process
    */
-  void process_enabled(uint32_t frames) {
+  void process_enabled(uint32_t frames) noexcept {
     uint32_t processed_frames = 0;
 
     while (processed_frames < frames) {
@@ -209,30 +215,49 @@ public:
   }
 
   /**
+   * @brief Bypassed processing
+   */
+  void process_bypass(size_t frames) noexcept {
+    // Copy left output data if they are different locations in memory
+    if (input_left_ != output_left_) {
+      std::copy_n(input_left_, frames, output_left_);
+    }
+
+    // Similar with the right channel
+    if (input_right_ != output_right_) {
+      std::copy_n(input_right_, frames, output_right_);
+    }
+  }
+
+  /**
+   * @brief Update the enable state
+   */
+  void update_enable() noexcept {
+    if (enabled_cache_ != (*enabled_)) {
+      enabled_cache_ = (*enabled_);
+    }
+  }
+
+  /**
    * @brief Main process routine
    *
    * @param frames Number of frames to process
    */
-  void process(uint32_t frames) {
-    auto enabled = *enabled_;
+  void process(uint32_t frames) noexcept {
+    update_enable();
 
     // Process biquad if enable flag is true
-    if (enabled) {
+    // TODO: Smooth transition between states
+    if (enabled_cache_) {
       process_enabled(frames);
     } else {
-
-      // Copy left output data if they are different locations in memory
-      if (input_left_ != output_left_) {
-        std::copy_n(input_left_, frames, output_left_);
-      }
-
-      // Similar with the right channel
-      if (input_right_ != output_right_) {
-        std::copy_n(output_right_, frames, input_right_);
-      }
+      process_bypass(frames);
     }
   }
 
+  /**
+   * @brief Check if any paramater has changed
+   */
   bool parameters_changed(size_t band) {
     auto param_changed = false;
     const auto FREQ_MAX = sample_rate_ / 2.0F;
@@ -324,6 +349,7 @@ private:
   float *output_right_{nullptr};
 
   uint32_t *enabled_{nullptr};
+  uint32_t enabled_cache_{0};
 };
 
 #endif // A5EQ_EQ_HPP_
