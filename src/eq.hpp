@@ -18,6 +18,10 @@
 #ifndef A5EQ_EQ_HPP_
 #define A5EQ_EQ_HPP_
 
+#include "dsp_biquad.hpp"
+#include "eq_math.hpp"
+#include "eq_utils.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -25,11 +29,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <cstring>
-
-#include "eq_math.hpp"
-#include "eq_utils.hpp"
-#include "dsp_biquad.hpp"
 
 /**
  * @brief Main EQ class
@@ -145,80 +144,91 @@ public:
   }
 
   /**
+   * @brief Process at enabled state, output buffer gets written with sysout
+   *
+   * @param frames Number of frames to process
+   */
+  void process_enabled(uint32_t frames) {
+    uint32_t processed_frames = 0;
+
+    while (processed_frames < frames) {
+      // Select the right buffers for processing
+      auto *input_left =
+          input_left_ ? (input_left_ + processed_frames) : null_buffer_.data();
+      auto *input_right = input_right_ ? (input_right_ + processed_frames)
+                                       : null_buffer_.data();
+      auto *output_left = output_left_ ? (output_left_ + processed_frames)
+                                       : null_buffer_.data();
+      auto *output_right = output_right_ ? (output_right_ + processed_frames)
+                                         : null_buffer_.data();
+
+      auto n_proc = std::min(frames - processed_frames,
+                             static_cast<uint32_t>(MINIMUM_FRAME_SIZE));
+
+      // Protect input buffer from all FP exceptions
+      fp_buffer_protect_all(input_left, n_proc);
+      fp_buffer_protect_all(input_right, n_proc);
+
+      // Process biquad bands
+      for (uint32_t band = 0; band < NUM_BANDS; ++band) {
+        const auto *coeff = coeff_.data() + (band * NUM_COEFF_PER_BAND);
+        auto *state = state_.data() + (band * NUM_STATE_PER_BAND * NUM_CHANNEL);
+
+        auto *xl = (band == 0) ? input_left : output_left;
+        auto *yl = output_left;
+        auto *xr = (band == 0) ? input_right : output_right;
+        auto *yr = output_right;
+
+        if (parameters_changed(band)) {
+          auto *new_coeff = tmp_coeff_.data();
+          process_biquad_stereo_xfade(coeff, new_coeff, state, yl, xl, yr, xr,
+                                      n_proc);
+          std::copy(tmp_coeff_.begin(), tmp_coeff_.end(),
+                    coeff_.begin() + (band * NUM_COEFF_PER_BAND));
+        } else {
+          process_biquad_stereo(coeff, state, yl, xl, yr, xr, n_proc);
+        }
+      }
+
+      // Protect output buffer from all FP exceptions
+      fp_buffer_protect_all(output_left, n_proc);
+      fp_buffer_protect_all(output_right, n_proc);
+
+      // Do the next iteration
+      processed_frames += n_proc;
+    }
+
+    // Reset filter state in case of filter instability
+    if (fp_buffer_check(state_.data(), state_.size())) {
+      state_.fill(0.0F);
+    }
+
+    // Protect state memory from going into denormal region, which
+    // reduces processing throughput
+    fp_buffer_protect_subnormal(state_.data(), state_.size());
+  }
+
+  /**
    * @brief Main process routine
-   * @param frames Number of samples to process
+   *
+   * @param frames Number of frames to process
    */
   void process(uint32_t frames) {
     auto enabled = *enabled_;
 
     // Process biquad if enable flag is true
     if (enabled) {
-      uint32_t processed_frames = 0;
-
-      while (processed_frames < frames) {
-        // Select the right buffers for processing
-        auto *input_left = input_left_ ? (input_left_ + processed_frames)
-                                       : null_buffer_.data();
-        auto *input_right = input_right_ ? (input_right_ + processed_frames)
-                                         : null_buffer_.data();
-        auto *output_left = output_left_ ? (output_left_ + processed_frames)
-                                         : null_buffer_.data();
-        auto *output_right = output_right_ ? (output_right_ + processed_frames)
-                                           : null_buffer_.data();
-
-        auto n_proc = std::min(frames - processed_frames,
-                               static_cast<uint32_t>(MINIMUM_FRAME_SIZE));
-
-        // Protect input buffer from all FP exceptions
-        fp_buffer_protect_all(input_left, n_proc);
-        fp_buffer_protect_all(input_right, n_proc);
-
-        // Process biquad bands
-        for (uint32_t band = 0; band < NUM_BANDS; ++band) {
-          const auto *coeff = coeff_.data() + (band * NUM_COEFF_PER_BAND);
-          auto *state =
-              state_.data() + (band * NUM_STATE_PER_BAND * NUM_CHANNEL);
-
-          auto *xl = (band == 0) ? input_left : output_left;
-          auto *yl = output_left;
-          auto *xr = (band == 0) ? input_right : output_right;
-          auto *yr = output_right;
-
-          if (parameters_changed(band)) {
-            auto *new_coeff = tmp_coeff_.data();
-            process_biquad_stereo_xfade(coeff, new_coeff, state, yl, xl, yr, xr,
-                                        n_proc);
-            std::copy(tmp_coeff_.begin(), tmp_coeff_.end(),
-                      coeff_.begin() + (band * NUM_COEFF_PER_BAND));
-          } else {
-            process_biquad_stereo(coeff, state, yl, xl, yr, xr, n_proc);
-          }
-        }
-
-        // Protect output buffer from all FP exceptions
-        fp_buffer_protect_all(output_left, n_proc);
-        fp_buffer_protect_all(output_right, n_proc);
-
-        // Do the next iteration
-        processed_frames += n_proc;
-      }
-
-      // Reset filter state in case of filter instability
-      if (fp_buffer_check(state_.data(), state_.size())) {
-        state_.fill(0.0F);
-      }
-
-      // Protect state memory from going into denormal region, which
-      // reduces processing throughput
-      fp_buffer_protect_subnormal(state_.data(), state_.size());
+      process_enabled(frames);
     } else {
-      // Copy left output data
+
+      // Copy left output data if they are different locations in memory
       if (input_left_ != output_left_) {
-        memcpy(output_left_, input_left_, frames * sizeof(float));
+        std::copy_n(input_left_, frames, output_left_);
       }
-      // Copy right output data
+
+      // Similar with the right channel
       if (input_right_ != output_right_) {
-        memcpy(output_right_, input_right_, frames * sizeof(float));
+        std::copy_n(output_right_, frames, input_right_);
       }
     }
   }
