@@ -18,6 +18,7 @@
 #ifndef A5EQ_EQ_UTILS_H_
 #define A5EQ_EQ_UTILS_H_
 
+#include <cmath>
 #include <cstddef>
 
 #define DEBUG_ENABLE 0 // Change this to enable debug
@@ -31,7 +32,6 @@
 #define DBG(X) (void)(0)
 #endif // DBG
 
-
 /**
  * @brief Compare @p a and @p b if they are close to each other
  *
@@ -43,7 +43,7 @@
  * @return false If they are not equal or close
  */
 template <typename DataType>
-static bool is_close(DataType a, DataType b, DataType th) {
+bool is_close(DataType a, DataType b, DataType th) {
   // Check for infinity and 0.0F
   if (a == b) {
     return true;
@@ -63,7 +63,7 @@ static bool is_close(DataType a, DataType b, DataType th) {
  * @return false Buffer is "all-good"
  */
 template <typename DataType>
-static bool fp_buffer_check(const DataType *src, size_t len) {
+bool fp_buffer_check(const DataType *src, size_t len) {
   for (size_t i = 0; i < len; ++i) {
     if (!std::isfinite(src[i])) {
       return true;
@@ -79,7 +79,7 @@ static bool fp_buffer_check(const DataType *src, size_t len) {
  * @param len Number of samples to process
  */
 template <typename DataType>
-static void fp_buffer_protect_all(DataType *dst, size_t len) {
+void fp_buffer_protect_all(DataType *dst, size_t len) {
   for (size_t i = 0; i < len; ++i) {
     auto x = dst[i];
     if (!(std::isfinite(x) && std::isnormal(x))) {
@@ -95,7 +95,7 @@ static void fp_buffer_protect_all(DataType *dst, size_t len) {
  * @param len Number of samples to process
  */
 template <typename DataType>
-static void fp_buffer_protect_subnormal(DataType *dst, size_t len) {
+void fp_buffer_protect_subnormal(DataType *dst, size_t len) {
   for (size_t i = 0; i < len; ++i) {
     if (!std::isnormal(dst[i])) {
       dst[i] = static_cast<DataType>(0);
