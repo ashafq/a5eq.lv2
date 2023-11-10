@@ -26,7 +26,7 @@
 #define SSE2_OPTIMIZATION (1)
 #define NO_OPTIMIZATION (0)
 
-#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#if (defined(__aarch64__)) && (defined(__ARM_NEON) || defined(__ARM_NEON__))
 
 // Include NEON intrinsic header file
 #include <arm_neon.h>
@@ -57,6 +57,139 @@
 /************************
  * Filter implementations
  ************************/
+
+#if (DSP_OPTIMIZATION == ARM_NEON_OPTIMIZATION)
+
+// The PROCESS_BIQUAD macro would be redefined for NEON
+#define PROCESS_BIQUAD(x0, y0, b0, b1, b2, a1, a2, s1, s2)                     \
+  do {                                                                         \
+    /* y0 = (b0 * x0) + s1 */                                                  \
+    y0 = vmlaq_f64(s1, b0, x0);                                                \
+    /* s1 = (b1 * x0) + (a1 * y0) + s2 */                                      \
+    s1 = vmlaq_f64(s2, b1, x0);                                                \
+    s1 = vmlaq_f64(s1, a1, y0);                                                \
+    /* s2 = (b2 * x0) + (a2 * y0) */                                           \
+    s2 = vmlaq_f64(vmulq_f64(a2, y0), b2, x0);                                 \
+  } while (0)
+
+/**
+ * @brief Process biquad filter for a single stage of biquad
+ *
+ * @details
+ *
+ * Inspired from the author's old code with 4 channel biquad here:
+ *
+ * https://gist.github.com/ashafq/0db953125a033b783c6e100acd5e64d9
+ *
+ * This is optimized for AARCH64 NEON
+ *
+ * @param[in] coeff Filter coefficients
+ * @param[in,out] state Filter state
+ * @param[out] dst Destination/output buffer
+ * @param[in] src Source/input buffer
+ * @param len Number of samples to process
+ *
+ * @note Filter is executed in Direct form II topology
+ * @see https://ccrma.stanford.edu/~jos/fp/Transposed_Direct_Forms.html
+ *
+ * @note Memory segments in @p src and @p dst may overlap
+ */
+void process_biquad_stereo(const double *coeff, double *state, float *out_left,
+                           const float *in_left, float *out_right,
+                           const float *in_right, size_t frames) {
+  // Copy the same coefficients for both left and right channels
+  float64x2_t b0 = vdupq_n_f64(coeff[0]);
+  float64x2_t b1 = vdupq_n_f64(coeff[1]);
+  float64x2_t b2 = vdupq_n_f64(coeff[2]);
+  float64x2_t a1 = vdupq_n_f64(-coeff[3]);
+  float64x2_t a2 = vdupq_n_f64(-coeff[4]);
+
+  float64x2_t s1 = vld1q_f64(state + 0);
+  float64x2_t s2 = vld1q_f64(state + 2);
+
+  size_t simd_frames = frames & (~static_cast<size_t>(3));
+  size_t count = 0;
+
+  while (count < simd_frames) {
+    // Load input samples into SSE registers and convert to double
+    float32x4_t x_left = vld1q_f32(in_left + count);   // {l0, l1, l2, l3}
+    float32x4_t x_right = vld1q_f32(in_right + count); // {l0, l1, l2, l3}
+
+    float64x2_t x_left_0 =
+        vcvt_f64_f32(vget_low_f32(x_left)); // {l0, l1} (double)
+    float64x2_t x_right_0 =
+        vcvt_f64_f32(vget_low_f32(x_right)); // {r0, r1} (double)
+
+    float64x2_t x_left_1 =
+        vcvt_f64_f32(vget_high_f32(x_left)); // {l2, l3} (double)
+    float64x2_t x_right_1 =
+        vcvt_f64_f32(vget_high_f32(x_right)); // {r2, r3} (double)
+
+    // Interleave left and right inputs for stereo pair
+    float64x2_t x0 = vtrn1q_f64(x_left_0, x_right_0); // {l0, r0}
+    float64x2_t x1 = vtrn2q_f64(x_left_0, x_right_0); // {l1, r1}
+    float64x2_t x2 = vtrn1q_f64(x_left_1, x_right_1); // {l2, r2}
+    float64x2_t x3 = vtrn2q_f64(x_left_1, x_right_1); // {l3, r3}
+
+    // Outputs
+    float64x2_t y0, y1, y2, y3;
+
+    PROCESS_BIQUAD(x0, y0, b0, b1, b2, a1, a2, s1, s2);
+    PROCESS_BIQUAD(x1, y1, b0, b1, b2, a1, a2, s1, s2);
+    PROCESS_BIQUAD(x2, y2, b0, b1, b2, a1, a2, s1, s2);
+    PROCESS_BIQUAD(x3, y3, b0, b1, b2, a1, a2, s1, s2);
+
+    float64x2_t y_left_0 = vuzp1q_f64(y0, y1);  // {l0, l1}
+    float64x2_t y_right_0 = vuzp2q_f64(y0, y1); // {r0, r1}
+    float64x2_t y_left_1 = vuzp1q_f64(y2, y3);  // {l2, l3}
+    float64x2_t y_right_1 = vuzp2q_f64(y2, y3); // {r2, r3}
+
+    // Convert the output to float and combine them into two registers
+    float32x4_t y_left = vcombine_f32(
+        vcvt_f32_f64(y_left_0), vcvt_f32_f64(y_left_1)); // {l0, l1, l2, l3}
+    float32x4_t y_right = vcombine_f32(
+        vcvt_f32_f64(y_right_0), vcvt_f32_f64(y_right_1)); // {r0, r1, r2, r3}
+
+    // Store the results
+    vst1q_f32(out_left + count, y_left);
+    vst1q_f32(out_right + count, y_right);
+
+    count += 4;
+  }
+
+  // Process any remaining frames
+  while (count < frames) {
+    // Load single float values and create float32x2_t vectors
+    float64x1_t x_left = vdup_n_f64(static_cast<double>(in_left[count]));
+    float64x1_t x_right = vdup_n_f64(static_cast<double>(in_right[count]));
+
+    // Interleave left and right inputs for stereo pair
+    float64x2_t x0 = vcombine_f64(x_left, x_right);
+
+    // Outputs
+    float64x2_t y0;
+
+    PROCESS_BIQUAD(x0, y0, b0, b1, b2, a1, a2, s1, s2);
+
+    // y0 = {yl, yr}
+    float64x1_t yl = vget_low_f64(y0);  // {yl}
+    float64x1_t yr = vget_high_f64(y0); // {yr}
+
+    // Store the results
+    out_left[count] = static_cast<float32_t>(vget_lane_f64(yl, 0));
+    out_right[count] = static_cast<float32_t>(vget_lane_f64(yr, 0));
+
+    ++count;
+  }
+
+  // Store states
+  vst1q_f64(state + 0, s1);
+  vst1q_f64(state + 2, s2);
+}
+
+#undef PROCESS_BIQUAD // No longer needed
+
+#endif // ARM_NEON_OPTIMIZATION
 
 #if (DSP_OPTIMIZATION == AVX2_FMA_OPTIMIZATION) ||                             \
     (DSP_OPTIMIZATION == SSE2_OPTIMIZATION)
@@ -164,9 +297,6 @@ static void process_biquad_stereo(const double *coeff, double *state,
 
     _mm_storeu_ps(out_left + count, y_left);
     _mm_storeu_ps(out_right + count, y_right);
-
-    // printf("count = %zu\n", count);
-    // printf("simd_frames = %zu\n", simd_frames);
   }
 
   // Process any remaining frames
@@ -190,9 +320,6 @@ static void process_biquad_stereo(const double *coeff, double *state,
     // Store the result into out_left and out_right
     _mm_store_ss(out_left + count, _mm_cvtpd_ps(yl));
     _mm_store_ss(out_right + count, _mm_cvtpd_ps(yr));
-
-    // printf("count = %zu\n", count);
-    // printf("frames = %zu\n", frames);
 
     ++count;
   }

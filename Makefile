@@ -1,6 +1,13 @@
 #!/usr/bin/make -f
 
+ARM64 = $(shell uname -a | grep -c arm64) # Detect Apple M1
+
+ifeq (ARM64, 1)
+OPTIMIZATIONS ?= -ffast-math -fno-finite-math-only -march=armv8-a -O3
+else
 OPTIMIZATIONS ?= -mfma -mfpmath=sse -ffast-math -fno-finite-math-only -O3
+endif
+
 PREFIX ?= /usr/local
 CFLAGS ?= $(OPTIMIZATIONS) -Wall -Wextra -Wpedantic -std=c++17
 LIBDIR ?= lib
