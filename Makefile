@@ -1,15 +1,15 @@
 #!/usr/bin/make -f
 
-ARM64 = $(shell uname -a | grep -c arm64) # Detect Apple M1
+ARM64 = $(shell uname -a | grep -c arm64)
 
-ifeq (ARM64, 1)
+ifeq ($(ARM64), 1)
 OPTIMIZATIONS ?= -ffast-math -fno-finite-math-only -march=armv8-a -O3
 else
 OPTIMIZATIONS ?= -mfma -mfpmath=sse -ffast-math -fno-finite-math-only -O3
 endif
 
 PREFIX ?= /usr/local
-CFLAGS ?= $(OPTIMIZATIONS) -Wall -Wextra -Wpedantic -std=c++17
+CFLAGS ?= $(OPTIMIZATIONS) -Wall -Wextra -Wpedantic -std=c++20 -fno-omit-frame-pointer
 LIBDIR ?= lib
 CC     := g++
 
@@ -72,6 +72,9 @@ override CFLAGS += `pkg-config --cflags lv2`
 # build target definitions
 default: all
 
+debug: override CFLAGS += -DDEBUG_ENABLED=1
+debug: all
+
 all: $(BUILDDIR)manifest.ttl $(BUILDDIR)$(LV2NAME).ttl $(targets)
 
 lv2syms:
@@ -129,4 +132,5 @@ distclean: clean
 
 .PHONY: clean all install uninstall distclean
 
-src/a5eq.o: src/a5eq.cc src/dsp_biquad.hpp src/eq.hpp src/eq_math.hpp src/eq_utils.hpp
+a5eq.o: src/a5eq.cc src/eq.hpp src/eq_math.hpp src/eq_utils.hpp \
+ src/iir_filter.hpp src/dsp_biquad.hpp src/dsp_crossfade.hpp

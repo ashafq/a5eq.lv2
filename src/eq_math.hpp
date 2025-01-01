@@ -42,8 +42,7 @@
  *
  * @return std::array<double, 5> Coefficients in {b0, b1, b2, a1, a2}
  */
-std::array<double, 5> compute_low_shelf(double fc, double gain, double q,
-                                        double fs) {
+std::array<double, 5> compute_low_shelf(double fc, double gain, double q, double fs) {
   assert(fs > 0 && "Sample rate must be greater than zero");
   assert(((fc > 0) && (fc <= (fs / 2))) && "Frequency: 0 < fc ");
   assert(q > 0 && "Q must be greater than zero");
@@ -65,8 +64,7 @@ std::array<double, 5> compute_low_shelf(double fc, double gain, double q,
     printf("%s: fc = %g, gain = %g, Q= %g, fs = %g\n"
            "\t| w0 [%g], alpha [%g], A [%g]\n"
            "\t| %g, %g, %g, %g, %g, %g\n",
-           __PRETTY_FUNCTION__, fc, gain, q, fs, w0, alpha, A, b0, b1, b2, a0,
-           a1, a2);
+           __PRETTY_FUNCTION__, fc, gain, q, fs, w0, alpha, A, b0, b1, b2, a0, a1, a2);
   });
 
   return {{b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0}};
@@ -85,8 +83,7 @@ std::array<double, 5> compute_low_shelf(double fc, double gain, double q,
  *
  * @return std::array<double, 5> Coefficients in {b0, b1, b2, a1, a2}
  */
-std::array<double, 5> compute_high_shelf(double fc, double gain, double q,
-                                         double fs) {
+std::array<double, 5> compute_high_shelf(double fc, double gain, double q, double fs) {
   assert(fs > 0 && "Sample rate must be greater than zero");
   assert(((fc > 0) && (fc <= (fs / 2))) && "Frequency: 0 < fc ");
   assert(q > 0 && "Q must be greater than zero");
@@ -108,8 +105,7 @@ std::array<double, 5> compute_high_shelf(double fc, double gain, double q,
     printf("%s: fc = %g, gain = %g, Q= %g, fs = %g\n"
            "\t| w0 [%g], alpha [%g], A [%g]\n"
            "\t| %g, %g, %g, %g, %g, %g\n",
-           __PRETTY_FUNCTION__, fc, gain, q, fs, w0, alpha, A, b0, b1, b2, a0,
-           a1, a2);
+           __PRETTY_FUNCTION__, fc, gain, q, fs, w0, alpha, A, b0, b1, b2, a0, a1, a2);
   });
 
   return {{b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0}};
@@ -128,8 +124,7 @@ std::array<double, 5> compute_high_shelf(double fc, double gain, double q,
  *
  * @return std::array<double, 5> Coefficients in {b0, b1, b2, a1, a2}
  */
-std::array<double, 5> compute_peaking(double fc, double gain, double q,
-                                      double fs) {
+std::array<double, 5> compute_peaking(double fc, double gain, double q, double fs) {
   assert(fs > 0 && "Sample rate must be greater than zero");
   assert(((fc > 0) && (fc <= (fs / 2))) && "Frequency: 0 < fc ");
   assert(q > 0 && "Q must be greater than zero");
@@ -149,8 +144,7 @@ std::array<double, 5> compute_peaking(double fc, double gain, double q,
     printf("%s: fc = %g, gain = %g, Q= %g, fs = %g\n"
            "\t| w0 [%g], alpha [%g], A [%g]\n"
            "\t| %g, %g, %g, %g, %g, %g\n",
-           __PRETTY_FUNCTION__, fc, gain, q, fs, w0, alpha, A, b0, b1, b2, a0,
-           a1, a2);
+           __PRETTY_FUNCTION__, fc, gain, q, fs, w0, alpha, A, b0, b1, b2, a0, a1, a2);
   });
 
   return {{b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0}};

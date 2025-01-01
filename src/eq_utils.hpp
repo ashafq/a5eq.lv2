@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Ayan Shafqat <ayan.x.shafqat@gmail.com>
+ * Copyright (C) 2023-2025 Ayan Shafqat <ayan.x.shafqat@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,15 +21,18 @@
 #include <cmath>
 #include <cstddef>
 
-#define DEBUG_ENABLE 0 // Change this to enable debug
+#ifdef DEBUG_ENABLE
 
-#if (DEBUG_ENABLE == 1)
-#define DBG(X)                                                                 \
-  do {                                                                         \
-    X                                                                          \
+#define DBG(X)                                                                           \
+  do {                                                                                   \
+    X                                                                                    \
   } while (0)
+#define DBGx(x) (void)(0)
+
 #else
 #define DBG(X) (void)(0)
+#define DBGx(x) (void)(0)
+
 #endif // DBG
 
 /**
@@ -42,8 +45,7 @@
  * @return true If they are equal or close
  * @return false If they are not equal or close
  */
-template <typename DataType>
-bool is_close(DataType a, DataType b, DataType th) {
+template <typename DataType> bool is_close(DataType a, DataType b, DataType th) {
   // Check for infinity and 0.0F
   if (a == b) {
     return true;
@@ -62,8 +64,11 @@ bool is_close(DataType a, DataType b, DataType th) {
  *    non-finite region
  * @return false Buffer is "all-good"
  */
-template <typename DataType>
-bool fp_buffer_check(const DataType *src, size_t len) {
+template <typename DataType> bool fp_buffer_check(const DataType *src, size_t len) {
+  if (!src) {
+    return true;
+  }
+
   for (size_t i = 0; i < len; ++i) {
     if (!std::isfinite(src[i])) {
       return true;
@@ -78,8 +83,11 @@ bool fp_buffer_check(const DataType *src, size_t len) {
  * @param[out] dst Output buffer
  * @param len Number of samples to process
  */
-template <typename DataType>
-void fp_buffer_protect_all(DataType *dst, size_t len) {
+template <typename DataType> void fp_buffer_protect_all(DataType *dst, size_t len) {
+  if (!dst) {
+    return;
+  }
+
   for (size_t i = 0; i < len; ++i) {
     auto x = dst[i];
     if (!(std::isfinite(x) && std::isnormal(x))) {
@@ -94,8 +102,11 @@ void fp_buffer_protect_all(DataType *dst, size_t len) {
  * @param[out] dst Output buffer
  * @param len Number of samples to process
  */
-template <typename DataType>
-void fp_buffer_protect_subnormal(DataType *dst, size_t len) {
+template <typename DataType> void fp_buffer_protect_subnormal(DataType *dst, size_t len) {
+  if (!dst) {
+    return;
+  }
+
   for (size_t i = 0; i < len; ++i) {
     if (!std::isnormal(dst[i])) {
       dst[i] = static_cast<DataType>(0);
